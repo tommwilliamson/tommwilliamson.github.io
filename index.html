@@ -19,6 +19,16 @@
     <option value="OtherTask">Other Task</option>
   </select>
   <button hidden class="logTaskButton" onclick="logTask()" id="logTaskButton">Log Task</button>
+  <select  hidden name="interact_types" id="interact_types">
+    <option value="VerbalInter">Physical Interaction</option>
+    <option value="PhysInter">Verbal Interaction</option>
+    <option value="OtherInter">Other Interaction</option>
+  </select>
+  <label hidden id="ipa_label" for="interact_party_a">between</label>
+  <select hidden name="interact_party_a" id="interact_party_a"></select>  
+  <label hidden id="ipb_label" for="interact_party_b">and</label>
+  <select hidden name="interact_party_b" id="interact_party_b"></select>
+  <button hidden class="logInteractButton" onclick="logInteraction()" id="logInteractButton">Log Interaction</button>
   <button hidden class="toggleLoggingButton" onclick="toggleLogging()" id="toggleLoggingButton">Start Logging</button>
   <br>
   <br>
@@ -34,7 +44,7 @@ let loggingTimer;
 window.onload = function() {
 	canvas = document.getElementById("canvas");
 	ctx = canvas.getContext("2d");
-  	var w =  window.innerWidth;
+  	var w =  window.innerWidth*0.98;
 	var h =  window.innerHeight*0.8;
 	ctx.canvas.width  = w;
 	ctx.canvas.height = h;
@@ -106,7 +116,25 @@ function setupOR() {
 	document.getElementById("toggleLoggingButton").hidden = false;
 	document.getElementById("logging_area").hidden = false;
 	document.getElementById("logging_area").appendChild(document.createElement("br"));
+	document.getElementById("logInteractButton").hidden = false;
+	document.getElementById("interact_types").hidden = false;
+	var ipa = document.getElementById("interact_party_a");
+	var ipb = document.getElementById("interact_party_b");
+	for(let i=0; i<moveableObjects.length; i++) {
+		var role = moveableObjects[i].role;
+		var option_a = document.createElement('option');
+		option_a.text = role;
+		var option_b = document.createElement('option');
+		option_b.text = role;
 
+		ipa.add(option_a);
+		ipb.add(option_b);
+
+	}
+	ipa.hidden = false;
+	ipb.hidden = false;
+	document.getElementById("ipa_label").hidden = false;
+	document.getElementById("ipb_label").hidden = false;
 
 }
 
@@ -138,10 +166,6 @@ function drawObjects()
 		ctx.fill();
 		ctx.stroke(); 
 	}
-	if (isLogging)
-	{
-		logState();
-	}
 }
 
 let previousSelectedObject;
@@ -170,7 +194,11 @@ function canvasClick(e) {
 let isDragging = false;
 
 function stopDragging() {
-  isDragging = false;
+	isDragging = false;
+	if (isLogging)
+	{
+		logState();
+	}
 }
 
 function dragObject(e) {
@@ -246,6 +274,24 @@ function logState()
 	div.appendChild(linebreak);
 
 }
+
+function logInteraction(){
+	const dateString = new Date().toLocaleString();
+	const formattedString = dateString.replace(", ", " - ");
+	var div = document.getElementById('logging_area');
+	var int_list = document.getElementById('interact_types');
+	var int_text = int_list.options[int_list.selectedIndex].text;
+	var a_list = document.getElementById('interact_party_a');
+	var a_text = a_list.options[a_list.selectedIndex].text;
+	var b_list = document.getElementById('interact_party_b');
+	var b_text = b_list.options[b_list.selectedIndex].text;
+
+	div.innerHTML += formattedString + ' ' + int_text + ' between ' + a_text + ' and ' + b_text;
+	linebreak = document.createElement("br");
+	div.appendChild(linebreak);
+
+}
+
 function refreshTime() {
   const timeDisplay = document.getElementById("time");
   const dateString = new Date().toLocaleString();
