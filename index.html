@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <label id="time"> </label>
+  <br>
+  <label for="or_configs">Choose an OR Config:</label>
+  <select name="or_configs" id="or_configs">
+    <option value="OR1">OR1</option>
+  </select>
+  <button class="generateButton" onclick="setupOR()">Generate</button>
+  <br>
+<canvas hidden id="canvas" style="border:1px solid grey;"></canvas>
+<br>
+  <label hidden for="workflow_tasks">Log a workflow task:</label>
+  <select  hidden name="workflow_tasks" id="workflow_tasks">
+    <option value="Task1">Task 1</option>
+    <option value="Task2">Task 2</option>
+    <option value="Task3">Task 3</option>
+    <option value="OtherTask">Other Task</option>
+  </select>
+  <button hidden class="logTaskButton" onclick="logTask()" id="logTaskButton">Log Task</button>
+  <button hidden class="toggleLoggingButton" onclick="toggleLogging()" id="toggleLoggingButton">Start Logging</button>
+  <br>
+  <br>
+  <div  style="overflow: auto; max-height: 75px; border:1px solid grey;" hidden id="logging_area">Log data: </div>
+<script>
+// This array hold all the objects on the canvas.
+let moveableObjects = [];
+let canvas;
+let ctx;
+let isLogging = false;
+let loggingTimer;
+
+window.onload = function() {
+	canvas = document.getElementById("canvas");
+	ctx = canvas.getContext("2d");
+  	var w =  window.innerWidth*0.9;
+	var h =  window.innerHeight*0.8;
+	ctx.canvas.width  = w;
+	ctx.canvas.height = h;
+	canvas.onmousedown = canvasClick;
+	canvas.onmouseup = stopDragging;
+	canvas.onmouseout = stopDragging;
+	canvas.onmousemove = dragObject;
+};
+
+function Person(x, y, role) {
+	this.x = x;
+	this.y = y;
+	this.radius = 40;
+	this.type = 0;
+	this.role = role;
+	if (role == 'surgeon'){
+		this.color = 'green';
+	} else {
+		this.color = 'yellow';
+	}  
+	this.isSelected = false;
+}
+
+function Hardware(x,y,w,h,role){
+	this.x = x;
+	this.y = y;
+	this.w = w;
+	this.h = h;
+	this.type = 1;
+	this.role = role;
+	if (role == 'robot'){
+		this.color = 'blue';
+	} else {
+		this.color = 'grey';
+	}  
+	this.isSelected = false;
+}
+
+function clearCanvas() {
+  moveableObjects = [];
+  drawObjects();
+}
+
+function drawWalls(){
+	let w = canvas.width;
+	let h = canvas.height;
+	ctx.beginPath(); 
+	ctx.moveTo(20,20);
+	ctx.lineTo(20+w*0.7,20);
+	ctx.lineTo(20+w*0.95,h*0.9);
+	ctx.lineTo(20,h*0.9);
+	ctx.lineTo(20,20);
+	ctx.stroke();
+
+}
+
+
+function setupOR() {
+	let surgeon = new Person(500,250,'surgeon');
+	let mps = new Person(195,350,'mps');
+	let robot = new Hardware(500,500,150,150,'robot');
+	let table = new Hardware(495,300,450,150,'table');
+	moveableObjects.push(surgeon);
+	moveableObjects.push(mps);
+	moveableObjects.push(robot);
+	moveableObjects.push(table);
+	drawObjects();
+	ctx.canvas.hidden = false;
+	document.getElementById("workflow_tasks").hidden = false;
+	document.getElementById("logTaskButton").hidden = false;
+	document.getElementById("toggleLoggingButton").hidden = false;
+	document.getElementById("logging_area").hidden = false;
+	document.getElementById("logging_area").appendChild(document.createElement("br"));
+
+
+}
+
+function drawObjects()
+{
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	drawWalls();
+	for(let i=0; i<moveableObjects.length; i++) {
+		let object = moveableObjects[i];
+		ctx.globalAlpha = 0.85;
+		ctx.beginPath();
+		if (object.type == 0){
+			ctx.arc(object.x, object.y, object.radius, 0, Math.PI*2);
+		} else {
+			ctx.moveTo(object.x,object.y);
+			ctx.lineTo(object.x+object.w,object.y);
+			ctx.lineTo(object.x+object.w,object.y+object.h);
+			ctx.lineTo(object.x,object.y+object.h);
+			ctx.lineTo(object.x,object.y);
+		}
+		ctx.fillStyle = object.color;
+		ctx.strokeStyle = "black";
+		if (object.isSelected) {
+		  ctx.lineWidth = 5;
+		}
+		else {
+		  ctx.lineWidth = 1;
+		}
+		ctx.fill();
+		ctx.stroke(); 
+	}
+	if (isLogging)
+	{
+		logState();
+	}
+}
+
+let previousSelectedObject;
+
+function canvasClick(e) {
+  let clickX = e.pageX - canvas.offsetLeft;	
+  let clickY = e.pageY - canvas.offsetTop;
+
+  for(let i=moveableObjects.length-1; i>=0; i--) {
+    let object = moveableObjects[i];
+	if (object.type == 0)
+	{	
+		let distanceFromCenter = Math.sqrt(Math.pow(object.x - clickX, 2) + Math.pow(object.y - clickY, 2))
+		if (distanceFromCenter <= object.radius) {
+		  if (previousSelectedObject != null) previousSelectedObject.isSelected = false;
+		  previousSelectedObject = object;
+		  object.isSelected = true;
+		  isDragging = true;
+		  drawObjects();
+		  return;
+		}
+	}
+  }
+}
+
+let isDragging = false;
+
+function stopDragging() {
+  isDragging = false;
+}
+
+function dragObject(e) {
+  if (isDragging == true) {
+    if (previousSelectedObject != null) {
+      let x = e.pageX - canvas.offsetLeft;
+      let y = e.pageY - canvas.offsetTop;
+
+      previousSelectedObject.x = x;
+      previousSelectedObject.y = y;
+
+      drawObjects();
+    }
+  }
+}
+
+
+function randomFromTo(from, to) {
+  return Math.floor(Math.random() * (to - from + 1) + from);
+}
+
+
+function logTask(type)
+{
+	const dateString = new Date().toLocaleString();
+	const formattedString = dateString.replace(", ", " - ");
+	var div = document.getElementById('logging_area');
+	var task_list =document.getElementById('workflow_tasks');
+	var task_text = task_list.options[task_list.selectedIndex].text;
+
+	div.innerHTML += formattedString + ' ' + task_text;
+	linebreak = document.createElement("br");
+	div.appendChild(linebreak);
+}
+
+
+function toggleLogging()
+{
+	var button =document.getElementById('toggleLoggingButton');
+	if (isLogging == false)
+	{
+//		loggingTimer = setInterval(logState, 1000);
+		isLogging = true;
+		button.textContent = 'Stop Logging';
+
+	}
+	else
+	{
+		//clearInterval(loggingTimer);
+		isLogging = false;
+		button.textContent = 'Start Logging';
+	}
+
+}
+
+function logState()
+{
+	const dateString = new Date().toLocaleString();
+	const formattedString = dateString.replace(", ", " - ");
+	var div = document.getElementById('logging_area');
+	var task_list =document.getElementById('workflow_tasks');
+	var task_text = task_list.options[task_list.selectedIndex].text;
+
+	div.innerHTML += formattedString + ' ';
+	
+
+	for(let i=0; i<moveableObjects.length; i++) {
+		let object = moveableObjects[i];
+		div.innerHTML += object.role + ' ' + object.x + ' ' + object.y + ' ';
+	}
+	
+	linebreak = document.createElement("br");
+	div.appendChild(linebreak);
+
+}
+function refreshTime() {
+  const timeDisplay = document.getElementById("time");
+  const dateString = new Date().toLocaleString();
+  const formattedString = dateString.replace(", ", " - ");
+  timeDisplay.textContent = formattedString;
+}
+setInterval(refreshTime, 1000);
+
+
+</script>
+</body>
+</html>
