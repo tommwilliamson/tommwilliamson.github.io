@@ -79,13 +79,11 @@ function clearCanvas() {
 }
 
 function drawWalls(){
-	let w = canvas.width;
-	let h = canvas.height;
 	ctx.beginPath(); 
 	ctx.moveTo(20,20);
-	ctx.lineTo(20+800,20);
-	ctx.lineTo(20+1000,800);
-	ctx.lineTo(20,800);
+	ctx.lineTo(20+1200,20);
+	ctx.lineTo(20+1500,700);
+	ctx.lineTo(20,700);
 	ctx.lineTo(20,20);
 	ctx.stroke();
 
