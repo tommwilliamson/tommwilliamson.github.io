@@ -194,11 +194,12 @@ function canvasClick(e) {
 let isDragging = false;
 
 function stopDragging() {
-	isDragging = false;
-	if (isLogging)
+	if (isLogging && isDragging)
 	{
 		logState();
 	}
+	isDragging = false;
+
 }
 
 function dragObject(e) {
@@ -237,6 +238,7 @@ function logTask(type)
 
 function toggleLogging()
 {
+	logState();
 	var button =document.getElementById('toggleLoggingButton');
 	if (isLogging == false)
 	{
